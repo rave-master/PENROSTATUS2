@@ -10,7 +10,6 @@ import {
   getDocs,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBjYPyVv9qC88JGD8N1tnDZLT0hh1sZUtQ",
   authDomain: "locator-66521.firebaseapp.com",
@@ -21,15 +20,12 @@ const firebaseConfig = {
   measurementId: "G-S87YVN1RX4",
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Auth check on page load
 onAuthStateChanged(auth, async (user) => {
   if (user) {
-    document.getElementById("body").style.display = "block";
     await loadDashboard();
   } else {
     alert("You must be logged in to view the dashboard.");
@@ -37,39 +33,35 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Logout function
 window.logout = function () {
   signOut(auth)
     .then(() => (window.location.href = "index.html"))
-    .catch((err) => alert("Logout error: " + err.message));
+    .catch((err) => alert(err.message));
 };
 
-// Load dashboard data
 window.loadDashboard = async function () {
   const table = document.getElementById("staff-table");
   const search = document.getElementById("search").value.trim().toLowerCase();
-  table.innerHTML = ""; // Clear existing rows
+  table.innerHTML = "";
 
   try {
-    const snapshot = await getDocs(collection(db, "users"));
-    snapshot.forEach((docSnap) => {
+    const querySnapshot = await getDocs(collection(db, "users"));
+    querySnapshot.forEach((docSnap) => {
       const data = docSnap.data();
-
-      // Validate required fields
+      // Ensure required fields exist before using them
       if (!data.name || !data.designation) return;
       if (!data.name.toLowerCase().includes(search)) return;
 
-      // Build row
       const row = `
         <tr>
           <td><img src="${data.photoURL || 'https://via.placeholder.com/50'}" alt="PHOTO" class="w-20 h-20 rounded-full mx-auto border border-black"></td>
-          <td class="font-bold text-lg">${data.name.toUpperCase()}</td>
-          <td class="italic text-base">${data.designation.toUpperCase()}</td>
-          <td class="italic">${data.weeklyStatus?.monday || ""}</td>
-          <td class="italic">${data.weeklyStatus?.tuesday || ""}</td>
-          <td class="italic">${data.weeklyStatus?.wednesday || ""}</td>
-          <td class="italic">${data.weeklyStatus?.thursday || ""}</td>
-          <td class="italic">${data.weeklyStatus?.friday || ""}</td>
+          <td style="font-size: 20px; font-weight: bold;">${data.name.toUpperCase()}</td>
+          <td style="font-size: 18px; font-style: italic;">${data.designation.toUpperCase()}</td>
+          <td style="font-size: 16px; font-style: italic;">${data.weeklyStatus?.monday || ""}</td>
+          <td style="font-size: 16px; font-style: italic;">${data.weeklyStatus?.tuesday || ""}</td>
+          <td style="font-size: 16px; font-style: italic;">${data.weeklyStatus?.wednesday || ""}</td>
+          <td style="font-size: 16px; font-style: italic;">${data.weeklyStatus?.thursday || ""}</td>
+          <td style="font-size: 16px; font-style: italic;">${data.weeklyStatus?.friday || ""}</td>
         </tr>`;
       table.innerHTML += row;
     });
