@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PENRO Personnel Locator</title>
+  <title>PENRO Personnel Locator</title> 
   <link rel="icon" href="https://i.imgur.com/ZRlEx8f.png" type="image/x-icon">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
       getAuth,
       createUserWithEmailAndPassword,
       signInWithEmailAndPassword,
-      signOut,
       onAuthStateChanged,
+      GoogleAuthProvider,
+      FacebookAuthProvider,
+      signInWithPopup
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import {
       getFirestore,
@@ -42,6 +45,8 @@
     const auth = getAuth();
     const db = getFirestore();
     const storage = getStorage();
+    const googleProvider = new GoogleAuthProvider();
+    const facebookProvider = new FacebookAuthProvider();
 
     const authSection = document.getElementById("auth-section");
     const profileForm = document.getElementById("profile-form");
@@ -86,6 +91,13 @@
             document.getElementById("thursday-status").value = data.weeklyStatus.thursday || "";
             document.getElementById("friday-status").value = data.weeklyStatus.friday || "";
           }
+        } else {
+          await setDoc(docRef, {
+            name: user.displayName || "",
+            designation: "",
+            photoURL: user.photoURL || "",
+            weeklyStatus: {},
+          });
         }
       } else {
         authSection.classList.remove("hidden");
@@ -117,10 +129,45 @@
       }
     };
 
-    window.logout = async () => {
-      await signOut(auth);
-      alert("Logged out.");
-    };
+    document.getElementById("google-login").addEventListener("click", async () => {
+      try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          await setDoc(docRef, {
+            name: user.displayName,
+            designation: "",
+            photoURL: user.photoURL,
+            weeklyStatus: {},
+          });
+        }
+        alert(`Logged in as ${user.displayName}`);
+      } catch (error) {
+        alert("Google login error: " + error.message);
+      }
+    });
+
+    document.getElementById("facebook-login").addEventListener("click", async () => {
+      try {
+        const result = await signInWithPopup(auth, facebookProvider);
+        const user = result.user;
+        const docRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          await setDoc(docRef, {
+            name: user.displayName,
+            designation: "",
+            photoURL: user.photoURL,
+            weeklyStatus: {},
+          });
+        }
+        alert(`Logged in as ${user.displayName}`);
+      } catch (error) {
+        alert("Facebook login error: " + error.message);
+      }
+    });
 
     window.submitProfile = async () => {
       const user = auth.currentUser;
@@ -179,14 +226,15 @@
   <div class="container mx-auto p-6">
     <h1 class="text-4xl font-bold text-center mb-8 animate-bounce">PENRO Personnel Locator</h1>
 
-    <!-- Auth -->
+    <!-- Auth Section -->
     <div id="auth-section" class="mb-6 text-center space-y-4">
       <input id="email" type="email" placeholder="Email" class="border px-4 py-2 rounded shadow w-full max-w-xs">
       <input id="password" type="password" placeholder="Password" class="border px-4 py-2 rounded shadow w-full max-w-xs">
       <div class="space-x-2">
         <button onclick="register()" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Register</button>
         <button onclick="login()" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">Login</button>
-        <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Logout</button>
+        <button id="google-login" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded">Login with Google</button>
+        <button id="facebook-login" class="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-4 rounded">Login with Facebook</button>
       </div>
     </div>
 
@@ -212,7 +260,7 @@
       updateDateTime();
     </script>
 
-    <!-- Status Form -->
+    <!-- Weekly Status Form -->
     <div id="status-form" class="mb-6 bg-white p-4 rounded shadow-lg hidden">
       <h2 class="text-xl font-semibold mb-4">Weekly Status</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
